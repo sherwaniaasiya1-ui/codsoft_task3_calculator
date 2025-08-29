@@ -1,0 +1,615 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Anzala Calculator — Anzala Sherwani Computer Corporation</title>
+  <meta name="description" content="Anzala Calculator — safe expression evaluator with memory, history, keyboard support. By Anzala Sherwani Computer Corporation."/>
+  <style>
+    :root{
+      --bg-grad: linear-gradient(135deg,#4f46e5 0%, #9333ea 50%, #3b82f6 100%);
+      --card-bg: rgba(255,255,255,0.06);
+      --glass: rgba(255,255,255,0.12);
+      --accent1: #7c3aed;
+      --accent2: #06b6d4;
+      --white: #ffffff;
+      --muted: rgba(255,255,255,0.85);
+      --danger: #ff6b6b;
+      --radius:14px;
+      --maxw:960px;
+      --calc-w:420px;
+      --gap:12px;
+      font-family: Inter, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
+    }
+
+    *{box-sizing:border-box;margin:0;padding:0}
+    html,body{height:100%;background:var(--bg-grad);background-attachment:fixed;color:var(--white);-webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale}
+    .page {max-width:var(--maxw);margin:32px auto;padding:20px}
+
+    header.top {
+      display:flex;align-items:center;gap:16px;margin-bottom:18px;
+    }
+    .logo {
+      width:62px;height:62px;border-radius:12px;background:linear-gradient(135deg,var(--accent1),var(--accent2));
+      display:flex;align-items:center;justify-content:center;font-weight:800;font-size:20px;color:white;box-shadow:0 8px 26px rgba(12,13,20,0.25);
+    }
+    .brand {
+      line-height:1;
+    }
+    .brand h1{font-size:1.2rem;margin-bottom:4px}
+    .brand p{font-size:.85rem;color:rgba(255,255,255,0.9)}
+
+    .layout {
+      display:grid;
+      grid-template-columns: calc(var(--calc-w) + 2rem) 1fr;
+      gap:20px;
+      align-items:start;
+    }
+
+    /* Calculator Card */
+    .calculator {
+      width:var(--calc-w);
+      background: linear-gradient(180deg, rgba(255,255,255,0.06), rgba(255,255,255,0.03));
+      border-radius:var(--radius);padding:18px;
+      box-shadow:0 16px 40px rgba(2,6,23,0.36);
+      backdrop-filter: blur(6px);
+    }
+
+    .display {
+      background: rgba(0,0,0,0.14);border-radius:12px;padding:14px;min-height:84px;
+      display:flex;flex-direction:column;justify-content:center;gap:6px;margin-bottom:14px;color:var(--white);
+    }
+    .expression {font-size:.95rem;color:rgba(255,255,255,0.75);overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
+    .result {font-size:1.7rem;font-weight:800;line-height:1.04;overflow:auto}
+
+    /* memory + copy row */
+    .top-controls {display:flex;gap:8px;align-items:center;margin-bottom:10px}
+    .mem-ind {font-weight:700;color:var(--accent2)}
+    .small-btn {padding:6px 8px;border-radius:8px;border:0;background:rgba(255,255,255,0.06);color:var(--white);font-weight:700;cursor:pointer}
+    .small-btn:active{transform:translateY(1px)}
+
+    /* keys grid */
+    .keys {
+      display:grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap:10px;
+    }
+    button.key {
+      border:0;border-radius:10px;padding:16px;font-size:1.02rem;font-weight:800;color:var(--white);
+      background: linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));
+      box-shadow: inset 0 -2px 0 rgba(0,0,0,0.14), 0 8px 18px rgba(2,6,23,0.18);
+      cursor:pointer;transition: transform .08s ease, box-shadow .08s ease, filter .12s;
+      user-select:none;
+    }
+    button.key:hover{filter:brightness(1.06)}
+    button.key:active{transform:translateY(2px)}
+    .op {background: linear-gradient(90deg,var(--accent1),var(--accent2));}
+    .equal {background: linear-gradient(90deg,#06b6d4,#7c3aed);grid-column:4/5}
+    .zero {grid-column:1/3;text-align:left;padding-left:22px}
+    .clear {background: linear-gradient(90deg,#ff6b6b,#ff8a7a)}
+    .back {background: linear-gradient(90deg,#f59e0b,#fb923c)}
+
+    /* right panel (about & history) */
+    .panel {
+      background: rgba(255,255,255,0.04);padding:14px;border-radius:12px;height:100%;
+      backdrop-filter: blur(6px);
+    }
+    .panel h3{margin-bottom:8px}
+    .features-list{display:flex;flex-direction:column;gap:8px;margin-bottom:12px}
+    .feature-item{display:flex;gap:8px;align-items:center}
+    .badge{width:40px;height:40px;border-radius:10px;display:inline-flex;align-items:center;justify-content:center;font-weight:800;background:linear-gradient(135deg,var(--accent1),var(--accent2));color:white}
+
+    .history {margin-top:8px}
+    .history-list{display:flex;flex-direction:column;gap:8px;max-height:260px;overflow:auto;padding-right:6px}
+    .history-item{padding:8px;border-radius:8px;background:rgba(0,0,0,0.12);display:flex;justify-content:space-between;gap:8px;align-items:center;cursor:pointer}
+    .history-item small{color:rgba(255,255,255,0.8)}
+
+    .controls-row{display:flex;gap:8px;margin-top:10px}
+    .muted{color:rgba(255,255,255,0.85);font-size:.92rem}
+
+    /* responsive */
+    @media (max-width:980px){
+      .layout{grid-template-columns:1fr;align-items:stretch}
+      .calculator{width:100%}
+    }
+    @media (max-width:480px){
+      button.key{padding:12px;font-size:.95rem}
+      .result{font-size:1.4rem}
+    }
+  </style>
+</head>
+<body>
+  <div class="page">
+    <header class="top" role="banner">
+      <div class="logo" aria-hidden="true">AS</div>
+      <div class="brand">
+        <h1>Anzala Calculator</h1>
+        <p>By Anzala Sherwani Computer Corporation — safe calculator with memory & history</p>
+      </div>
+    </header>
+
+    <main class="layout" role="main">
+      <!-- LEFT: Calculator -->
+      <section class="calculator" aria-label="Anzala Calculator">
+        <div class="top-controls" style="justify-content:space-between;align-items:center">
+          <div style="display:flex;gap:8px;align-items:center">
+            <button class="small-btn" id="mcBtn" title="Memory Clear">MC</button>
+            <button class="small-btn" id="mrBtn" title="Memory Recall">MR</button>
+            <button class="small-btn" id="mPlusBtn" title="Memory Add">M+</button>
+            <button class="small-btn" id="mMinusBtn" title="Memory Sub">M-</button>
+            <div id="memIndicator" style="margin-left:6px;color:transparent;font-weight:800">M</div>
+          </div>
+          <div style="display:flex;gap:8px;align-items:center">
+            <button class="small-btn" id="copyBtn" title="Copy result">Copy</button>
+            <button class="small-btn" id="clearAllTop" title="Clear All">C</button>
+          </div>
+        </div>
+
+        <div class="display" role="region" aria-label="Calculator display">
+          <div id="expression" class="expression" aria-hidden="true">0</div>
+          <div id="result" class="result" aria-hidden="true">0</div>
+        </div>
+
+        <div class="keys" role="group" aria-label="Calculator keys">
+          <!-- Row 1 -->
+          <button class="key clear" data-action="clear" title="Clear (Esc)">C</button>
+          <button class="key back" data-action="back" title="Backspace (Backspace)">⌫</button>
+          <button class="key" data-action="percent" title="Percent (%)">%</button>
+          <button class="key op" data-action="/" title="Divide (/)" aria-label="divide">÷</button>
+
+          <!-- Row 2 -->
+          <button class="key" data-value="7">7</button>
+          <button class="key" data-value="8">8</button>
+          <button class="key" data-value="9">9</button>
+          <button class="key op" data-action="*" title="Multiply (*)">×</button>
+
+          <!-- Row 3 -->
+          <button class="key" data-value="4">4</button>
+          <button class="key" data-value="5">5</button>
+          <button class="key" data-value="6">6</button>
+          <button class="key op" data-action="-" title="Subtract (-)">−</button>
+
+          <!-- Row 4 -->
+          <button class="key" data-value="1">1</button>
+          <button class="key" data-value="2">2</button>
+          <button class="key" data-value="3">3</button>
+          <button class="key op" data-action="+" title="Add (+)">+</button>
+
+          <!-- Row 5 -->
+          <button class="key" data-action="toggleSign" title="Toggle sign">±</button>
+          <button class="key zero" data-value="0">0</button>
+          <button class="key" data-value=".">.</button>
+          <button class="key equal" data-action="=" title="Equals (Enter)">=</button>
+        </div>
+
+        <div class="kbd-hint muted" style="margin-top:10px">Keyboard: 0-9 . + - * / Enter = Backspace Esc(clear) %  — Click history items to reuse</div>
+      </section>
+
+      <!-- RIGHT: Panel (About + History) -->
+      <aside class="panel" aria-label="About and History">
+        <h3>About Anzala Calculator</h3>
+        <div class="features-list">
+          <div class="feature-item"><div class="badge">✓</div><div><strong>Safe evaluator</strong><div style="font-size:.88rem;color:var(--muted)">No eval(), respects operator precedence.</div></div></div>
+          <div class="feature-item"><div class="badge">M</div><div><strong>Memory</strong><div style="font-size:.88rem;color:var(--muted)">M+, M-, MR, MC supported.</div></div></div>
+          <div class="feature-item"><div class="badge">⚡</div><div><strong>Keyboard support</strong><div style="font-size:.88rem;color:var(--muted)">Quick typing & shortcuts.</div></div></div>
+        </div>
+
+        <div style="display:flex;justify-content:space-between;align-items:center">
+          <h4 style="margin:0">History</h4>
+          <div style="display:flex;gap:8px">
+            <button class="small-btn" id="clearHistoryBtn" title="Clear history">Clear</button>
+            <button class="small-btn" id="exportHistoryBtn" title="Export history">Export</button>
+          </div>
+        </div>
+
+        <div class="history" aria-live="polite">
+          <div class="history-list" id="historyList" role="list" aria-label="Calculation history">
+            <!-- history items inserted here -->
+          </div>
+        </div>
+
+        <div class="controls-row" style="margin-top:12px">
+          <div class="muted">Powered by <strong>Anzala Sherwani</strong></div>
+        </div>
+      </aside>
+    </main>
+  </div>
+
+<script>
+/* ============================
+   Calculator logic (safe parser)
+   ============================ */
+
+(function(){
+  // DOM refs
+  const exprEl = document.getElementById('expression');
+  const resEl = document.getElementById('result');
+  const copyBtn = document.getElementById('copyBtn');
+  const memIndicator = document.getElementById('memIndicator');
+  const historyListEl = document.getElementById('historyList');
+
+  // Buttons
+  const buttons = document.querySelectorAll('button.key');
+  const btnClear = document.querySelector('button.clear');
+  const btnBack = document.querySelector('button.back');
+
+  // Memory buttons
+  const mcBtn = document.getElementById('mcBtn');
+  const mrBtn = document.getElementById('mrBtn');
+  const mPlusBtn = document.getElementById('mPlusBtn');
+  const mMinusBtn = document.getElementById('mMinusBtn');
+
+  const clearAllTop = document.getElementById('clearAllTop');
+  const clearHistoryBtn = document.getElementById('clearHistoryBtn');
+  const exportHistoryBtn = document.getElementById('exportHistoryBtn');
+
+  // State
+  let expression = '';
+  let justEvaluated = false;
+  let memory = 0;
+  let history = []; // array of {expr, result, ts}
+  const HISTORY_LIMIT = 30;
+
+  // -------------------------
+  // Utilities
+  // -------------------------
+  function updateUI(){
+    exprEl.textContent = expression || '0';
+    // result remains until new evaluation; if expression changed after eval, clear result (unless expression equals result)
+    // Keep the last result visible in resEl
+    memIndicator.style.color = (memory !== 0) ? '#fff' : 'transparent';
+    memIndicator.textContent = (memory !== 0) ? 'M' : '';
+    renderHistory();
+  }
+
+  function lastNumberPart(){
+    if(!expression) return '';
+    const idx = Math.max(
+      expression.lastIndexOf('+'),
+      expression.lastIndexOf('-'),
+      expression.lastIndexOf('*'),
+      expression.lastIndexOf('/')
+    );
+    return expression.slice(idx + 1);
+  }
+
+  // tokenizer supports unary minus inside a number (like -3 or 5*-2)
+  function tokenize(s){
+    const tokens = [];
+    let num = '';
+    const pushNum = ()=>{ if(num!=='') { tokens.push({type:'num', value:num}); num=''; } };
+    for(let i=0;i<s.length;i++){
+      const ch = s[i];
+      if((ch >= '0' && ch <= '9') || ch === '.'){
+        num += ch; continue;
+      }
+      if(ch === '-' && (i === 0 || /[+\-*/]/.test(s[i-1]))){
+        // unary minus as part of number
+        num += ch; continue;
+      }
+      if(/[+\-*/]/.test(ch)){
+        pushNum();
+        tokens.push({type:'op', value: ch});
+      }
+      // ignore other chars/spaces
+    }
+    pushNum();
+    return tokens;
+  }
+
+  function toRPN(tokens){
+    const out = [];
+    const ops = [];
+    const prec = {'+':1,'-':1,'*':2,'/':2};
+    for(const t of tokens){
+      if(t.type === 'num'){ out.push(t); continue; }
+      if(t.type === 'op'){
+        while(ops.length){
+          const top = ops[ops.length-1];
+          if(prec[top] >= prec[t.value]) out.push({type:'op', value: ops.pop()});
+          else break;
+        }
+        ops.push(t.value);
+      }
+    }
+    while(ops.length) out.push({type:'op', value: ops.pop()});
+    return out;
+  }
+
+  function evalRPN(rpn){
+    const st = [];
+    for(const t of rpn){
+      if(t.type === 'num'){
+        const n = parseFloat(t.value);
+        if(Number.isNaN(n)) throw new Error('Invalid number');
+        st.push(n); continue;
+      }
+      const b = st.pop();
+      const a = st.pop();
+      if(typeof a === 'undefined' || typeof b === 'undefined') throw new Error('Malformed');
+      let out;
+      switch(t.value){
+        case '+': out = a + b; break;
+        case '-': out = a - b; break;
+        case '*': out = a * b; break;
+        case '/':
+          if(b === 0) throw new Error('Division by zero');
+          out = a / b; break;
+        default: throw new Error('Unknown op');
+      }
+      st.push(out);
+    }
+    if(st.length !== 1) throw new Error('Malformed');
+    return st[0];
+  }
+
+  function evaluateExpression(s){
+    if(!s || s.trim() === '') return 0;
+    // trim trailing operators
+    while(s.length && /[+\-*/]$/.test(s)) s = s.slice(0,-1);
+    const tokens = tokenize(s);
+    if(tokens.length === 0) return 0;
+    const rpn = toRPN(tokens);
+    const val = evalRPN(rpn);
+    return val;
+  }
+
+  function formatNumber(n){
+    if(!isFinite(n)) return 'Error';
+    if(Number.isInteger(n)) return String(n);
+    return parseFloat(n.toFixed(8)).toString();
+  }
+
+  // -------------------------
+  // Input actions
+  // -------------------------
+  function appendDigit(d){
+    if(justEvaluated){
+      // start new expression unless user continues by operator
+      if(/[0-9.]/.test(d)){
+        expression = (d === '.') ? '0.' : d;
+        justEvaluated = false;
+        updateUI(); return;
+      }
+      // if operator after evaluation, allow chaining
+    }
+    // avoid multiple leading zeros
+    const last = lastNumberPart();
+    if(last === '0' && d === '0') return;
+    if(d === '.' && last.includes('.')) return;
+    expression += d;
+    updateUI();
+  }
+
+  function applyOperator(op){
+    if(!expression && op === '-') { expression = '-'; updateUI(); return; }
+    if(!expression) return;
+    if(/[+\-*/]$/.test(expression)) expression = expression.slice(0,-1) + op;
+    else expression += op;
+    justEvaluated = false;
+    updateUI();
+  }
+
+  function toggleSign(){
+    const last = lastNumberPart();
+    if(!last) return;
+    const idx = expression.length - last.length;
+    if(last.startsWith('-')) expression = expression.slice(0, idx) + last.slice(1);
+    else expression = expression.slice(0, idx) + '-' + last;
+    updateUI();
+  }
+
+  function applyPercent(){
+    const last = lastNumberPart();
+    if(!last) return;
+    const idx = expression.length - last.length;
+    const num = parseFloat(last);
+    if(Number.isNaN(num)) return;
+    const perc = num / 100;
+    expression = expression.slice(0, idx) + String(perc);
+    updateUI();
+  }
+
+  function doBack(){
+    if(!expression) return;
+    expression = expression.slice(0,-1);
+    updateUI();
+  }
+
+  function doClear(){
+    expression = '';
+    resEl.textContent = '0';
+    justEvaluated = false;
+    updateUI();
+  }
+
+  function evaluateAndShow(){
+    try{
+      const val = evaluateExpression(expression);
+      const formatted = formatNumber(val);
+      resEl.textContent = formatted;
+      // push to history (store original expression and result)
+      pushHistory(expression || formatted, formatted);
+      expression = formatted; // allow chaining
+      justEvaluated = true;
+    }catch(err){
+      resEl.textContent = 'Error';
+      justEvaluated = true;
+    }
+    updateUI();
+  }
+
+  // -------------------------
+  // Memory
+  // -------------------------
+  function memClear(){ memory = 0; updateUI(); }
+  function memRecall(){ expression = String(memory); justEvaluated = false; updateUI(); }
+  function memAdd(){
+    let val = tryGetCurrentValue();
+    if(val === null) return;
+    memory = memory + val;
+    updateUI();
+  }
+  function memSub(){
+    let val = tryGetCurrentValue();
+    if(val === null) return;
+    memory = memory - val;
+    updateUI();
+  }
+  function tryGetCurrentValue(){
+    // prefer current result if it exists
+    const resText = resEl.textContent;
+    const candidate = (resText && resText !== 'Error') ? parseFloat(resText) : null;
+    if(candidate !== null && !Number.isNaN(candidate)) return candidate;
+    try{
+      const val = evaluateExpression(expression);
+      if(!Number.isFinite(val)) return null;
+      return val;
+    }catch(e){
+      return null;
+    }
+  }
+
+  // -------------------------
+  // History
+  // -------------------------
+  function pushHistory(expr, result){
+    const item = {expr: expr, result: result, ts: Date.now()};
+    history.unshift(item);
+    if(history.length > HISTORY_LIMIT) history.pop();
+    renderHistory();
+  }
+  function renderHistory(){
+    historyListEl.innerHTML = '';
+    if(history.length === 0){
+      const el = document.createElement('div');
+      el.className = 'muted';
+      el.textContent = 'No history yet — perform a calculation.';
+      historyListEl.appendChild(el); return;
+    }
+    history.forEach((h, idx) => {
+      const el = document.createElement('div');
+      el.className = 'history-item';
+      el.setAttribute('role','listitem');
+      el.innerHTML = `<div style="display:flex;flex-direction:column"><small style="opacity:.9">${h.expr}</small><strong>${h.result}</strong></div>
+                      <div style="text-align:right;display:flex;flex-direction:column;gap:6px">
+                        <button class="small-btn" data-idx="${idx}" title="Use">Use</button>
+                        <button class="small-btn" data-copy="${idx}" title="Copy result">Copy</button>
+                      </div>`;
+      historyListEl.appendChild(el);
+    });
+  }
+
+  function clearHistory(){
+    history = [];
+    renderHistory();
+  }
+
+  function exportHistory(){
+    if(history.length === 0) { alert('No history to export'); return; }
+    const lines = history.map(h => `${new Date(h.ts).toLocaleString()} — ${h.expr} = ${h.result}`);
+    const blob = new Blob([lines.join('\n')], {type:'text/plain'});
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url; a.download = 'anzala-calculator-history.txt';
+    document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(url);
+  }
+
+  // -------------------------
+  // Copy result
+  // -------------------------
+  function copyResult(){
+    const text = resEl.textContent || '';
+    if(!navigator.clipboard) {
+      // fallback
+      const ta = document.createElement('textarea'); ta.value = text; document.body.appendChild(ta); ta.select();
+      try{ document.execCommand('copy'); alert('Copied result'); } catch(e){ alert('Copy failed'); }
+      ta.remove(); return;
+    }
+    navigator.clipboard.writeText(text).then(()=> {
+      // small visual feedback
+      copyBtn.textContent = 'Copied';
+      setTimeout(()=> copyBtn.textContent = 'Copy', 900);
+    }).catch(()=> alert('Copy failed'));
+  }
+
+  // -------------------------
+  // Button bindings
+  // -------------------------
+  buttons.forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      const v = btn.getAttribute('data-value');
+      const action = btn.getAttribute('data-action');
+      if(v !== null){ appendDigit(v); return; }
+      switch(action){
+        case '+': case '-': case '*': case '/': applyOperator(action); break;
+        case '=': evaluateAndShow(); break;
+        case 'clear': doClear(); break;
+        case 'back': doBack(); break;
+        case 'percent': applyPercent(); break;
+        case 'toggleSign': toggleSign(); break;
+        default: break;
+      }
+    });
+  });
+
+  // top small buttons
+  mcBtn.addEventListener('click', ()=> { memClear(); mcBtn.blur(); });
+  mrBtn.addEventListener('click', ()=> { memRecall(); mrBtn.blur(); });
+  mPlusBtn.addEventListener('click', ()=> { memAdd(); mPlusBtn.blur(); });
+  mMinusBtn.addEventListener('click', ()=> { memSub(); mMinusBtn.blur(); });
+
+  clearAllTop.addEventListener('click', ()=> { doClear(); clearAllTop.blur(); });
+  copyBtn.addEventListener('click', ()=> { copyResult(); copyBtn.blur(); });
+
+  clearHistoryBtn.addEventListener('click', ()=> { if(confirm('Clear history?')) clearHistory(); clearHistoryBtn.blur(); });
+  exportHistoryBtn.addEventListener('click', ()=> { exportHistory(); exportHistoryBtn.blur(); });
+
+  // history click handlers (delegated)
+  historyListEl.addEventListener('click', (e)=>{
+    const useBtn = e.target.closest('button[data-idx]');
+    if(useBtn){
+      const idx = Number(useBtn.getAttribute('data-idx'));
+      if(history[idx]){ expression = history[idx].expr; updateUI(); }
+      return;
+    }
+    const copyBtnLocal = e.target.closest('button[data-copy]');
+    if(copyBtnLocal){
+      const idx = Number(copyBtnLocal.getAttribute('data-copy'));
+      if(history[idx]) {
+        navigator.clipboard?.writeText(history[idx].result);
+        copyBtnLocal.textContent = 'Copied';
+        setTimeout(()=> copyBtnLocal.textContent = 'Copy', 900);
+      }
+      return;
+    }
+  });
+
+  // keyboard support
+  window.addEventListener('keydown', (e)=>{
+    // numbers and dot
+    if((e.key >= '0' && e.key <= '9') || e.key === '.'){
+      e.preventDefault(); appendDigit(e.key); return;
+    }
+    if(e.key === 'Enter' || e.key === '='){ e.preventDefault(); evaluateAndShow(); return; }
+    if(e.key === 'Backspace'){ e.preventDefault(); doBack(); return; }
+    if(e.key === 'Escape'){ e.preventDefault(); doClear(); return; }
+    if(e.key === '+' || e.key === '-' || e.key === '*' || e.key === '/'){
+      e.preventDefault(); applyOperator(e.key); return;
+    }
+    if(e.key === '%'){ e.preventDefault(); applyPercent(); return; }
+    // memory shortcuts: (optional) m = MR, shift+m = M+, alt+m = M-
+    if(e.key.toLowerCase() === 'm'){
+      // CTRL/Meta+M reserved? skip complex combos — simple: press 'm' to recall
+      e.preventDefault();
+      memRecall(); return;
+    }
+  });
+
+  // init UI
+  updateUI();
+
+})();
+</script>
+</body>
+</html>
